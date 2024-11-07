@@ -6,6 +6,31 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FiCopy, FiCheck } from "react-icons/fi"; // Import icons for copy and check
 
+const jsonExemplar = [
+    {
+        name: "src",
+        type: "folder",
+        children: [
+            {
+                name: "components",
+                type: "folder",
+                children: [
+                    {
+                        name: "Chatbot.jsx",
+                        type: "file",
+                        content: "This is the Chatbot component.",
+                    },
+                ],
+            },
+            {
+                name: "index.js",
+                type: "file",
+                content: "This is the main entry point of the app.",
+            },
+        ],
+    },
+];
+
 function Chatbot({ folderStructure, setFolderStructure }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -26,14 +51,23 @@ function Chatbot({ folderStructure, setFolderStructure }) {
 
         try {
             // Define the system message based on existing folder structure
-            const systemMessage =
-                folderStructure.length > 0
-                    ? `You are a helpful assistant managing a project folder structure. Here is the current structure:\n${JSON.stringify(
-                          folderStructure,
-                          null,
-                          2
-                      )}\n\nPlease perform the user's request and return the updated folder structure in JSON format only.`
-                    : `You are a helpful assistant. Currently, there is no folder structure. Please create one based on the user's instructions and return the folder structure in JSON format only.`;
+            const systemMessage = `
+                You are a helpful assistant managing a project folder structure.
+
+                Current folder structure (if any):
+                ${
+                    folderStructure.length > 0
+                        ? JSON.stringify(folderStructure, null, 2)
+                        : "None"
+                }
+
+                User request:
+                - Perform the user's request by creating, modifying, or deleting files/folders as instructed.
+                - Return the updated folder structure in JSON format only.
+
+                Reference example (for structure formatting only):
+                ${JSON.stringify(jsonExemplar, null, 2)}
+                `;
 
             const response = await ollama.chat({
                 model: "llama3.2",
