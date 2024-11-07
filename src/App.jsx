@@ -9,18 +9,18 @@ function App() {
     const [activeFile, setActiveFile] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
 
-    const handleFileSelect = (fileName) => {
-        if (!openFiles.includes(fileName)) {
-            setOpenFiles([...openFiles, fileName]);
+    const handleFileSelect = (filePath) => {
+        if (!openFiles.includes(filePath)) {
+            setOpenFiles([...openFiles, filePath]);
         }
-        setActiveFile(fileName);
+        setActiveFile(filePath);
     };
 
-    const handleCloseFile = (fileName) => {
-        const filteredFiles = openFiles.filter((file) => file !== fileName);
+    const handleCloseFile = (filePath) => {
+        const filteredFiles = openFiles.filter((file) => file !== filePath);
         setOpenFiles(filteredFiles);
 
-        if (activeFile === fileName) {
+        if (activeFile === filePath) {
             setActiveFile(filteredFiles.length > 0 ? filteredFiles[0] : null);
         }
     };

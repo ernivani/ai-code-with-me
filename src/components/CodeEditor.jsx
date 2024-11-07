@@ -1,7 +1,71 @@
 import React, { useState, useEffect } from "react";
 import MonacoEditor from "@monaco-editor/react";
+[
+    {
+        name: "components",
+        type: "folder",
+        children: [
+            {
+                name: "assets",
+                type: "folder",
+                children: [
+                    {
+                        name: "icons",
+                        type: "folder",
+                        children: [
+                            { name: "Icon.jsx", type: "file", content: "test" },
+                        ],
+                    },
+                ],
+            },
+            { name: "test.js", type: "file", content: "a" },
+        ],
+    },
+    { name: "main.js", type: "file", content: "test" },
+];
+const getFilesContent = (path) => {
+    const folderStructure = localStorage.getItem("three");
+    const pathArray = path.split("/");
+    let current = JSON.parse(folderStructure);
 
-// vs-dark background color: #1e1e1e
+    for (let segment of pathArray) {
+        if (Array.isArray(current)) {
+            current = current.find((item) => item.name == segment);
+            if (!current) return null;
+        } else {
+        }
+        if (current.type === "file") {
+            return current.content;
+        }
+        if (current.type === "folder") {
+            current = current.children;
+        }
+    }
+    return null;
+};
+
+const setFilesContent = (path, content) => {
+    const folderStructure = JSON.parse(localStorage.getItem("three"));
+    const pathArray = path.split("/");
+    let current = folderStructure;
+
+    for (let i = 0; i < pathArray.length; i++) {
+        const segment = pathArray[i];
+        if (Array.isArray(current)) {
+            current = current.find((item) => item.name === segment);
+            if (!current) return null;
+        }
+        if (current.type === "file" && i === pathArray.length - 1) {
+            current.content = content;
+            localStorage.setItem("three", JSON.stringify(folderStructure));
+            return;
+        }
+        if (current.type === "folder") {
+            current = current.children;
+        }
+    }
+    return null;
+};
 
 function CodeEditor({
     openFiles,
@@ -10,23 +74,21 @@ function CodeEditor({
     onCloseFile,
     isReadOnly,
 }) {
-    const [fileContents, setFileContents] = useState({}); // Contains the content of each file
+    const [fileContents, setFileContents] = useState({});
 
-    // Load file content from LocalStorage when opened
     useEffect(() => {
         openFiles.forEach((file) => {
-            if (!fileContents[file]) {
-                const savedCode =
-                    localStorage.getItem(file) || `// New file: ${file}`;
+            if (!(file in fileContents)) {
+                const savedCode = getFilesContent(file);
                 setFileContents((prev) => ({ ...prev, [file]: savedCode }));
             }
         });
-    }, [openFiles, fileContents]);
+    }, [openFiles]); // Removed `fileContents` to prevent infinite loop.
 
     const handleEditorChange = (value) => {
         setFileContents((prev) => ({ ...prev, [activeFile]: value }));
         if (activeFile) {
-            localStorage.setItem(activeFile, value);
+            setFilesContent(activeFile, value);
         }
     };
 
@@ -63,7 +125,6 @@ function CodeEditor({
                         </div>
                     ))}
                 </div>
-                {/* Optional: Add toggle edit mode button here */}
             </div>
 
             {activeFile ? (
