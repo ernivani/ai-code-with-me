@@ -10,24 +10,12 @@ const jsonExemplar = [
     {
         name: "src",
         type: "folder",
-        children: [
-            {
-                name: "components",
-                type: "folder",
-                children: [
-                    {
-                        name: "Chatbot.jsx",
-                        type: "file",
-                        content: "This is the Chatbot component.",
-                    },
-                ],
-            },
-            {
-                name: "index.js",
-                type: "file",
-                content: "This is the main entry point of the app.",
-            },
-        ],
+        children: [],
+    },
+    {
+        name: "index.js",
+        type: "file",
+        content: "This is the main entry point of the app.",
     },
 ];
 

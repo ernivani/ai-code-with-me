@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 function Console() {
     const [logs, setLogs] = useState([
-        "La console est temporairement désactivée.",
+        "The console is temporarily disabled.",
     ]);
 
     return (
