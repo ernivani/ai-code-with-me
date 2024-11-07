@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FileExplorer from "./components/FileExplorer";
 import CodeEditor from "./components/CodeEditor";
 import Console from "./components/Console";
@@ -8,6 +8,15 @@ function App() {
     const [openFiles, setOpenFiles] = useState([]);
     const [activeFile, setActiveFile] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
+    const [folderStructure, setFolderStructure] = useState(() => {
+        const stored = localStorage.getItem("three");
+        return stored ? JSON.parse(stored) : [];
+    });
+
+    // Update localStorage whenever folderStructure changes
+    useEffect(() => {
+        localStorage.setItem("three", JSON.stringify(folderStructure));
+    }, [folderStructure]);
 
     const handleFileSelect = (filePath) => {
         if (!openFiles.includes(filePath)) {
@@ -27,7 +36,10 @@ function App() {
 
     return (
         <div className="h-screen flex flex-row">
-            <Chatbot />
+            <Chatbot
+                folderStructure={folderStructure}
+                setFolderStructure={setFolderStructure}
+            />
             <div className="flex h-screen w-full bg-vs-black text-gray-100">
                 <div className="w-1/3 bg-vs-behind-editor text-gray-200 p-4">
                     <FileExplorer
@@ -35,6 +47,8 @@ function App() {
                         activeFile={activeFile}
                         setIsReadOnly={setIsReadOnly}
                         isReadOnly={isReadOnly}
+                        folderStructure={folderStructure}
+                        setFolderStructure={setFolderStructure}
                     />
                 </div>
 
@@ -45,6 +59,8 @@ function App() {
                         onFileSelect={setActiveFile}
                         onCloseFile={handleCloseFile}
                         isReadOnly={isReadOnly}
+                        folderStructure={folderStructure}
+                        setFolderStructure={setFolderStructure}
                     />
                     <Console />
                 </div>

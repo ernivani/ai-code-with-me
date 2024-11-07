@@ -6,15 +6,12 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FiCopy, FiCheck } from "react-icons/fi"; // Import icons for copy and check
 
-function Chatbot() {
+function Chatbot({ folderStructure, setFolderStructure }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false); // To manage loading state
     const [copiedMessageIndex, setCopiedMessageIndex] = useState(null); // Track copied messages
     const [copiedCodeIndices, setCopiedCodeIndices] = useState({}); // Track copied code blocks
-
-    const three = localStorage.getItem("three");
-    const folderStructure = three ? JSON.parse(three) : [];
 
     const sendMessage = async () => {
         if (input.trim() === "") return;
@@ -35,8 +32,8 @@ function Chatbot() {
                           folderStructure,
                           null,
                           2
-                      )}\n\nPlease perform the user's request and return the updated folder structure in JSON format only, enclosed within \`\`\`json\n...\n\`\`\`.`
-                    : `You are a helpful assistant. Currently, there is no folder structure. Please create one based on the user's instructions and return the folder structure in JSON format only, enclosed within \`\`\`json\n...\n\`\`\`.`;
+                      )}\n\nPlease perform the user's request and return the updated folder structure in JSON format only.`
+                    : `You are a helpful assistant. Currently, there is no folder structure. Please create one based on the user's instructions and return the folder structure in JSON format only.`;
 
             const response = await ollama.chat({
                 model: "llama3.2",
@@ -80,52 +77,77 @@ function Chatbot() {
 
             // Function to extract JSON from the assistantMessage
             const extractJSON = (text) => {
-                const jsonRegex = /```json\s*([\s\S]*?)```/;
-                const match = text.match(jsonRegex);
-                if (match && match[1]) {
-                    return match[1];
-                }
+                try {
+                    // Attempt to parse the entire text as JSON
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If parsing fails, try to extract JSON within code blocks
+                    const jsonRegex = /```json\s*([\s\S]*?)```/;
+                    const match = text.match(jsonRegex);
+                    if (match && match[1]) {
+                        return JSON.parse(match[1]);
+                    }
 
-                // Fallback: Attempt to extract JSON between the first [ and the last ]
-                const firstBracket = text.indexOf("[");
-                const lastBracket = text.lastIndexOf("]");
-                if (
-                    firstBracket !== -1 &&
-                    lastBracket !== -1 &&
-                    lastBracket > firstBracket
-                ) {
-                    return text.substring(firstBracket, lastBracket + 1);
-                }
+                    // Fallback: Attempt to extract JSON between the first [ and the last ]
+                    const firstBracket = text.indexOf("[");
+                    const lastBracket = text.lastIndexOf("]");
+                    if (
+                        firstBracket !== -1 &&
+                        lastBracket !== -1 &&
+                        lastBracket > firstBracket
+                    ) {
+                        const jsonString = text.substring(
+                            firstBracket,
+                            lastBracket + 1
+                        );
+                        return JSON.parse(jsonString);
+                    }
 
-                return null;
+                    return null;
+                }
             };
 
             // Extract JSON from the assistant's message
-            const jsonString = extractJSON(assistantMessage.trim());
-            console.log("Extracted JSON:", jsonString);
-            if (jsonString) {
-                try {
-                    const updatedStructure = JSON.parse(jsonString);
-                    // Validate the structure (optional but recommended)
-                    if (Array.isArray(updatedStructure)) {
-                        localStorage.setItem(
-                            "three",
-                            JSON.stringify(updatedStructure)
-                        );
+            const extractedJSON = extractJSON(assistantMessage.trim());
+
+            if (extractedJSON) {
+                // Validate that it's an array
+                if (Array.isArray(extractedJSON)) {
+                    // Optionally: Validate the structure of the objects
+                    const isValid = extractedJSON.every(
+                        (item) =>
+                            typeof item.name === "string" &&
+                            (item.type === "file" || item.type === "folder") &&
+                            (item.type === "file"
+                                ? typeof item.content === "string"
+                                : true)
+                    );
+
+                    if (isValid) {
+                        setFolderStructure(extractedJSON); // Update central state
+                        setMessages((prevMessages) => [
+                            ...prevMessages,
+                            {
+                                role: "assistant",
+                                content:
+                                    "Folder structure updated successfully.",
+                            },
+                        ]);
                     } else {
-                        throw new Error("Parsed JSON is not an array.");
+                        throw new Error("The JSON structure is invalid.");
                     }
-                } catch (parseError) {
-                    console.error("Error parsing extracted JSON:", parseError);
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        {
-                            role: "assistant",
-                            content:
-                                "Failed to update folder structure. Please ensure the AI returned valid JSON.",
-                        },
-                    ]);
+                } else {
+                    throw new Error("The parsed JSON is not an array.");
                 }
+            } else {
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    {
+                        role: "assistant",
+                        content:
+                            "Failed to extract folder structure. Please ensure the AI returned valid JSON.",
+                    },
+                ]);
             }
         } catch (error) {
             console.error("Error sending message:", error);

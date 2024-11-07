@@ -1,39 +1,19 @@
-import React, { useState, useEffect } from "react";
+import { getLanguageByExtension } from "./utils";
+import React, { useState, useEffect, useCallback } from "react";
 import MonacoEditor from "@monaco-editor/react";
-[
-    {
-        name: "components",
-        type: "folder",
-        children: [
-            {
-                name: "assets",
-                type: "folder",
-                children: [
-                    {
-                        name: "icons",
-                        type: "folder",
-                        children: [
-                            { name: "Icon.jsx", type: "file", content: "test" },
-                        ],
-                    },
-                ],
-            },
-            { name: "test.js", type: "file", content: "a" },
-        ],
-    },
-    { name: "main.js", type: "file", content: "test" },
-];
-const getFilesContent = (path) => {
-    const folderStructure = localStorage.getItem("three");
+
+const getFilesContent = (folderStructure, path) => {
     const pathArray = path.split("/");
-    let current = JSON.parse(folderStructure);
+    let current = folderStructure;
 
     for (let segment of pathArray) {
         if (Array.isArray(current)) {
-            current = current.find((item) => item.name == segment);
+            current = current.find((item) => item.name === segment);
             if (!current) return null;
         } else {
+            return null;
         }
+
         if (current.type === "file") {
             return current.content;
         }
@@ -44,8 +24,7 @@ const getFilesContent = (path) => {
     return null;
 };
 
-const setFilesContent = (path, content) => {
-    const folderStructure = JSON.parse(localStorage.getItem("three"));
+const setFilesContent = (folderStructure, path, content) => {
     const pathArray = path.split("/");
     let current = folderStructure;
 
@@ -53,18 +32,17 @@ const setFilesContent = (path, content) => {
         const segment = pathArray[i];
         if (Array.isArray(current)) {
             current = current.find((item) => item.name === segment);
-            if (!current) return null;
+            if (!current) return false;
         }
         if (current.type === "file" && i === pathArray.length - 1) {
             current.content = content;
-            localStorage.setItem("three", JSON.stringify(folderStructure));
-            return;
+            return true;
         }
         if (current.type === "folder") {
             current = current.children;
         }
     }
-    return null;
+    return false;
 };
 
 function CodeEditor({
@@ -73,24 +51,59 @@ function CodeEditor({
     onFileSelect,
     onCloseFile,
     isReadOnly,
+    folderStructure,
+    setFolderStructure,
 }) {
     const [fileContents, setFileContents] = useState({});
 
+    // Initialize fileContents when openFiles or folderStructure changes
     useEffect(() => {
         openFiles.forEach((file) => {
-            if (!(file in fileContents)) {
-                const savedCode = getFilesContent(file);
-                setFileContents((prev) => ({ ...prev, [file]: savedCode }));
-            }
+            const currentContent = getFilesContent(folderStructure, file);
+            setFileContents((prev) => ({
+                ...prev,
+                [file]: currentContent !== undefined ? currentContent : "",
+            }));
         });
-    }, [openFiles]); // Removed `fileContents` to prevent infinite loop.
+    }, [openFiles, folderStructure]);
+
+    // Synchronize fileContents with folderStructure updates
+    useEffect(() => {
+        openFiles.forEach((file) => {
+            const updatedContent = getFilesContent(folderStructure, file);
+            setFileContents((prev) => {
+                // Update only if the content has changed externally
+                if (prev[file] !== updatedContent) {
+                    return { ...prev, [file]: updatedContent || "" };
+                }
+                return prev;
+            });
+        });
+    }, [folderStructure, openFiles]);
 
     const handleEditorChange = (value) => {
         setFileContents((prev) => ({ ...prev, [activeFile]: value }));
         if (activeFile) {
-            setFilesContent(activeFile, value);
+            const updatedStructure = JSON.parse(
+                JSON.stringify(folderStructure)
+            ); // Deep copy
+            const success = setFilesContent(
+                updatedStructure,
+                activeFile,
+                value
+            );
+            if (success) {
+                setFolderStructure(updatedStructure);
+            }
         }
     };
+
+    const handleFileUpdateExternally = useCallback((filePath, newContent) => {
+        setFileContents((prev) => ({
+            ...prev,
+            [filePath]: newContent,
+        }));
+    }, []);
 
     return (
         <div className="flex flex-col h-full bg-vs-behind-editor text-gray-100 relative">
@@ -129,7 +142,7 @@ function CodeEditor({
 
             {activeFile ? (
                 <MonacoEditor
-                    language="javascript"
+                    language={getLanguageByExtension(activeFile)}
                     theme="vs-dark"
                     value={fileContents[activeFile] || ""}
                     options={{ readOnly: isReadOnly }}
@@ -138,7 +151,7 @@ function CodeEditor({
                 />
             ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-500">
-                    Aucun fichier sélectionné
+                    No file selected
                 </div>
             )}
         </div>

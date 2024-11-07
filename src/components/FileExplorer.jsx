@@ -6,13 +6,21 @@ import {
     faFile,
 } from "@fortawesome/free-solid-svg-icons";
 
-
-function FileNode({ node, onFileSelect, isActive }) {
+function FileNode({
+    node,
+    onFileSelect,
+    isActive,
+    setFolderStructure,
+    folderStructure,
+    parentPath,
+}) {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleFolder = () => {
         setIsOpen(!isOpen);
     };
+
+    const fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
 
     if (node.type === "folder") {
         return (
@@ -31,9 +39,15 @@ function FileNode({ node, onFileSelect, isActive }) {
                     <div className="ml-4">
                         {node.children.map((childNode, index) => (
                             <FileNode
-                                key={index}
+                                key={`${fullPath}/${childNode.name}-${index}`}
                                 node={childNode}
                                 onFileSelect={onFileSelect}
+                                isActive={
+                                    isActive === `${fullPath}/${childNode.name}`
+                                }
+                                setFolderStructure={setFolderStructure}
+                                folderStructure={folderStructure}
+                                parentPath={fullPath}
                             />
                         ))}
                     </div>
@@ -47,7 +61,7 @@ function FileNode({ node, onFileSelect, isActive }) {
             className={`flex items-center ml-4 cursor-pointer hover:bg-vs-hover-file ${
                 isActive ? "bg-vs-selected-file text-white" : ""
             }`}
-            onClick={() => onFileSelect(node.name)}
+            onClick={() => onFileSelect(fullPath)}
         >
             <FontAwesomeIcon icon={faFile} className="mr-2" />
             <span>{node.name}</span>
@@ -55,24 +69,32 @@ function FileNode({ node, onFileSelect, isActive }) {
     );
 }
 
-function FileExplorer({ onFileSelect, activeFile, setIsReadOnly, isReadOnly }) {
-    const fileStructure = localStorage.getItem("three")
-        ? JSON.parse(localStorage.getItem("three"))
-        : [];
-    const renderFileTree = (nodes) => {
+function FileExplorer({
+    onFileSelect,
+    activeFile,
+    setIsReadOnly,
+    isReadOnly,
+    folderStructure,
+    setFolderStructure,
+}) {
+    const renderFileTree = (nodes, parentPath = "") => {
         return nodes.map((node, index) => (
             <FileNode
-                key={index}
+                key={`${parentPath}/${node.name}-${index}`}
                 node={node}
                 onFileSelect={onFileSelect}
-                isActive={activeFile === node.name}
+                isActive={activeFile === `${parentPath}/${node.name}`}
+                setFolderStructure={setFolderStructure}
+                folderStructure={folderStructure}
+                parentPath={parentPath}
             />
         ));
     };
+
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold">Explorateur de fichiers</h2>
+                <h2 className="text-lg font-bold">File Explorer</h2>
                 <div className="flex items-center">
                     <span className="mr-2 text-sm">Read Only</span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -87,8 +109,9 @@ function FileExplorer({ onFileSelect, activeFile, setIsReadOnly, isReadOnly }) {
                     </label>
                 </div>
             </div>
-            <div>{renderFileTree(fileStructure)}</div>
+            <div>{renderFileTree(folderStructure)}</div>
         </div>
     );
 }
+
 export default FileExplorer;
