@@ -28,10 +28,15 @@ const fileStructure = [
     { name: "main.js", type: "file" },
 ];
 
-function FileExplorer({ onFileSelect, setIsReadOnly, isReadOnly }) {
+function FileExplorer({ onFileSelect, activeFile, setIsReadOnly, isReadOnly }) {
     const renderFileTree = (nodes) => {
         return nodes.map((node, index) => (
-            <FileNode key={index} node={node} onFileSelect={onFileSelect} />
+            <FileNode
+                key={index}
+                node={node}
+                onFileSelect={onFileSelect}
+                isActive={activeFile === node.name}
+            />
         ));
     };
 
@@ -58,7 +63,7 @@ function FileExplorer({ onFileSelect, setIsReadOnly, isReadOnly }) {
     );
 }
 
-function FileNode({ node, onFileSelect }) {
+function FileNode({ node, onFileSelect, isActive }) {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleFolder = () => {
@@ -95,7 +100,9 @@ function FileNode({ node, onFileSelect }) {
 
     return (
         <div
-            className="flex items-center ml-4 cursor-pointer hover:bg-vs-hover-file"
+            className={`flex items-center ml-4 cursor-pointer hover:bg-vs-hover-file ${
+                isActive ? "bg-vs-selected-file text-white" : ""
+            }`}
             onClick={() => onFileSelect(node.name)}
         >
             <FontAwesomeIcon icon={faFile} className="mr-2" />
