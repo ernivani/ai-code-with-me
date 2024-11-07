@@ -237,7 +237,7 @@ function Chatbot({ folderStructure, setFolderStructure }) {
     };
 
     return (
-        <div className="h-full w-1/2 bg-vs-black text-gray-100 flex flex-col">
+        <div className="h-full w-1/2 bg-vs-black text-gray-100 flex flex-col max-w-3xl">
             <div
                 className="p-4 overflow-y-auto flex-grow"
                 style={{ height: "calc(100% - 4rem)" }}
