@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FiCopy, FiCheck } from "react-icons/fi"; // Import icons for copy and check
+import { parseMalformedJson } from "./utils"; // Import utility function to parse malformed JSON
 
 const jsonExemplar = [
     {
@@ -58,7 +59,7 @@ function Chatbot({ folderStructure, setFolderStructure }) {
                 `;
 
             const response = await ollama.chat({
-                model: "llama3.2",
+                model: "mistral",
                 messages: [
                     { role: "system", content: systemMessage },
                     { role: "user", content: input },
@@ -107,7 +108,11 @@ function Chatbot({ folderStructure, setFolderStructure }) {
                     const jsonRegex = /```json\s*([\s\S]*?)```/;
                     const match = text.match(jsonRegex);
                     if (match && match[1]) {
-                        return JSON.parse(match[1]);
+                        try {
+                            return JSON.parse(match[1]);
+                        } catch (e) {
+                            return parseMalformedJson(match[1]);
+                        }
                     }
 
                     // Fallback: Attempt to extract JSON between the first [ and the last ]

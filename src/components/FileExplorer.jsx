@@ -38,19 +38,25 @@ function FileNode({
                 </div>
                 {isOpen && (
                     <div className="ml-4">
-                        {node.children.map((childNode, index) => (
-                            <FileNode
-                                key={`${fullPath}/${childNode.name}-${index}`}
-                                node={childNode}
-                                onFileSelect={onFileSelect}
-                                isActive={
-                                    isActive === `${fullPath}/${childNode.name}`
-                                }
-                                setFolderStructure={setFolderStructure}
-                                folderStructure={folderStructure}
-                                parentPath={fullPath}
-                            />
-                        ))}
+                        {node.children && node.children.length === 0 && (
+                            <div className="ml-4"></div>
+                        )}
+
+                        {node.children &&
+                            node.children.map((childNode, index) => (
+                                <FileNode
+                                    key={`${fullPath}/${childNode.name}-${index}`}
+                                    node={childNode}
+                                    onFileSelect={onFileSelect}
+                                    isActive={
+                                        isActive ===
+                                        `${fullPath}/${childNode.name}`
+                                    }
+                                    setFolderStructure={setFolderStructure}
+                                    folderStructure={folderStructure}
+                                    parentPath={fullPath}
+                                />
+                            ))}
                     </div>
                 )}
             </div>
